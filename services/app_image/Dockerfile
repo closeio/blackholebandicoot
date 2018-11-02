@@ -27,7 +27,7 @@ COPY --chown=blackhole:blackhole requirements.txt /opt/blackholebandicoot
 RUN virtualenv -p python3 /opt/blackholebandicoot/venv && \
     /opt/blackholebandicoot/venv/bin/pip install --no-deps -r /opt/blackholebandicoot/requirements.txt
 
-COPY --chown=blackhole:blackhole config.json /opt/blackholebandicoot
+COPY --chown=blackhole:blackhole config.yml /opt/blackholebandicoot
 COPY --chown=blackhole:blackhole blackholebandicoot /opt/blackholebandicoot/blackholebandicoot
 
 ENV LANG="en_US.UTF-8" \
