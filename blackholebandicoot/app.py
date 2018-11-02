@@ -30,8 +30,8 @@ class DB(object):
         self.size_check += 1
 
     def insert_request(self, r):
-        print (dir(r))
-        print (r.get_data())
+        #print (dir(r))
+        #print (r.get_data())
         sql = "insert into requests (host, path, payload) values ('{}', '{}', '{}')".format(
                         r.full_path, r.host, '')
         self.db.execute(sql)

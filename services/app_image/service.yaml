@@ -1,0 +1,9 @@
+phases:
+  build:
+    - docker:
+        args:
+          - build
+          - -t
+          - blackholebandicoot:{{ VERSION }}
+          - -f Dockerfile
+          - ../..
