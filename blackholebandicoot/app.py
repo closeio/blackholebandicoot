@@ -1,13 +1,19 @@
-import base64
+"""BlackholeBandicoot."""
+
 import os
 import random
 import sqlite3
 import time
 import uuid
 
-import json
+import yaml
 
 from flask import Flask, Response, request
+
+DB_POOL_SIZE = 5
+MAX_OLD_DBS = 2
+MAX_DB_SIZE = 10000000  # Bytes
+CONFIG_REFRESH_TIME = 5  # Seconds
 
 app = Flask(__name__)
 
@@ -16,7 +22,6 @@ class DB(object):
     def __init__(self, base, num):
         self.name = 'db/{}-{}.db'.format(base, num)
         self.db = None
-        self.size_check = 0
 
     def create_db(self):
         if not self.db:
@@ -24,18 +29,22 @@ class DB(object):
             self.db.execute('create table requests (host text, path text, payload text)')
 
     def too_big(self):
-        if self.size_check == 2:
+        c = self.db.cursor()
+        c.execute('SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size();')
+        size = int(c.fetchone()[0])
+        if size > MAX_DB_SIZE:
+            print ('Reached max size, closing db {} ({})'.format(self.name, size))
             self.db.close()
             return True
-        self.size_check += 1
 
     def insert_request(self, r):
-        #print (dir(r))
-        #print (r.get_data())
+        data = r.get_data(cache=False, as_text=True)
+
         sql = "insert into requests (host, path, payload) values ('{}', '{}', '{}')".format(
-                        r.full_path, r.host, '')
+                        r.full_path, r.host, data)
         self.db.execute(sql)
         self.db.commit()
+
 
 class DBPool(object):
     def __init__(self, size=5, max_old=None):
@@ -84,7 +93,7 @@ class DBPool(object):
             self.free_db.append(db)
 
 
-db_pool = DBPool(5, 2)
+db_pool = DBPool(DB_POOL_SIZE, MAX_OLD_DBS)
 last_config = 0
 pause_time = 0
 random_pause = 0
@@ -94,12 +103,13 @@ def load_config():
     """Dynamically reads config settings from disk file."""
 
     global local_config, last_config, pause_time, random_pause
-    if time.time() - last_config < 5:
+    if time.time() - last_config < CONFIG_REFRESH_TIME:
         return
     print ('Loading config')
     last_config = time.time()
-    with open('config.json') as f:
-        config = json.load(f)
+    with open('config.yml') as f:
+        config = yaml.load(f)
+        config = config['config']
         db_pool.max_old = config['max_old']
         pause_time = config['pause']
         random_pause = config['random_pause']
@@ -112,7 +122,7 @@ def catch_all(path):
 
     load_config()
     db = db_pool.get_db()
-    #time.sleep(5)
+
     try:
         db.insert_request(request)
         if ((random_pause and random.randint(0, random_pause - 1) == 1) or
