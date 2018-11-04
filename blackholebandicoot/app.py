@@ -107,20 +107,22 @@ class DBPool(object):
 db_pool = DBPool(DB_POOL_SIZE, MAX_OLD_DBS)
 last_config = 0
 pause_time = env('PAUSE_TIME', cast=float, default=0)
-random_pause = env('RANDOM_PAUSE', cast=int, default=0)
+pause_rate = env('PAUSE_RATE', cast=int, default=0)
+
 sample_rate = env('SAMPLE_RATE', cast=int, default=0)
 
+error_rate = env('ERROR_RATE', cast=int, default=0)
 
 def print_config():
     print ('Pause time:{} Random pause:{} Sample rate:{}'.format(
-        pause_time, random_pause, sample_rate
+        pause_time, pause_rate, sample_rate
         ))
 
 
 def load_config():
     """Dynamically reads config settings from disk file."""
 
-    global local_config, last_config, pause_time, random_pause
+    global error_rate, local_config, last_config, pause_time, pause_rate, sample_rate
 
     if not os.path.isfile('config.yml') or time.time() - last_config < CONFIG_REFRESH_TIME:
         return
@@ -132,11 +134,17 @@ def load_config():
             config = config['config']
             db_pool.max_old = config['max_old']
             pause_time = float(config['pause'])
-            random_pause = int(config['random_pause'])
+            sample_rate = int(config['sample_rate'])
+            pause_rate = int(config['pause_rate'])
+            error_rate = int(config['error_rate'])
             print_config()
     except Exception as e:
         print ('Error loading config', e)
 
+
+def should_i(rate):
+    return (rate != 0 and
+           (rate == 100 or random.randint(1, 100) <= rate))
 
 print_config()
 
@@ -149,17 +157,19 @@ def catch_all(path):
     load_config()
     db = None
     try:
-        if (sample_rate != 0 and
-           (sample_rate == 100 or random.randint(1, 100) <= sample_rate)):
+        if should_i(sample_rate):
             db = db_pool.get_db()
             db.insert_request(request)
-        if (random_pause != 0 and
-           (random_pause == 100 or random.randint(1, 100) <= random_pause)):
+        if should_i(pause_rate):
             time.sleep(pause_time)
+        if should_i(error_rate):
+            return_code = 400
+        else:
+            return_code = 200
 
     except Exception:
         raise
     finally:
         if db:
             db_pool.release_db(db)
-    return Response('{ok: 1}', mimetype='application/json')
+    return Response('{ok: 1}', mimetype='application/json', status=return_code)
