@@ -1,0 +1,4 @@
+config:
+  max_old: 5
+  pause: 1.1  # Decimal seconds
+  random_pause: 50  # Percentage of requests we should pause for

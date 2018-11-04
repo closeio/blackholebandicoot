@@ -7,6 +7,8 @@ import threading
 import time
 import uuid
 
+import envparse
+
 import yaml
 
 from flask import Flask, Response, request
@@ -15,10 +17,9 @@ DB_POOL_SIZE = 5
 MAX_OLD_DBS = 2
 MAX_DB_SIZE = 10000000  # Bytes
 CONFIG_REFRESH_TIME = 5  # Seconds
-SAMPLE_RATE = 0  # Percentage of records to keep
 
 app = Flask(__name__)
-
+env = envparse.Env()
 
 class DB(object):
     def __init__(self, base, num):
@@ -105,25 +106,39 @@ class DBPool(object):
 
 db_pool = DBPool(DB_POOL_SIZE, MAX_OLD_DBS)
 last_config = 0
-pause_time = 0
-random_pause = 0
-sample_rate = SAMPLE_RATE
+pause_time = env('PAUSE_TIME', cast=float, default=0)
+random_pause = env('RANDOM_PAUSE', cast=int, default=0)
+sample_rate = env('SAMPLE_RATE', cast=int, default=0)
+
+
+def print_config():
+    print ('Pause time:{} Random pause:{} Sample rate:{}'.format(
+        pause_time, random_pause, sample_rate
+        ))
 
 
 def load_config():
     """Dynamically reads config settings from disk file."""
 
     global local_config, last_config, pause_time, random_pause
-    if time.time() - last_config < CONFIG_REFRESH_TIME:
+
+    if not os.path.isfile('config.yml') or time.time() - last_config < CONFIG_REFRESH_TIME:
         return
-    print ('Loading config')
+
     last_config = time.time()
-    with open('config.yml') as f:
-        config = yaml.load(f)
-        config = config['config']
-        db_pool.max_old = config['max_old']
-        pause_time = config['pause']
-        random_pause = config['random_pause']
+    try:
+        with open('config.yml') as f:
+            config = yaml.load(f)
+            config = config['config']
+            db_pool.max_old = config['max_old']
+            pause_time = float(config['pause'])
+            random_pause = int(config['random_pause'])
+            print_config()
+    except Exception as e:
+        print ('Error loading config', e)
+
+
+print_config()
 
 
 @app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE'])
@@ -136,11 +151,10 @@ def catch_all(path):
     try:
         if (sample_rate != 0 and
            (sample_rate == 100 or random.randint(1, 100) <= sample_rate)):
-            print ('SS')
             db = db_pool.get_db()
             db.insert_request(request)
-        if ((random_pause and random.randint(0, random_pause - 1) == 1) or
-                not random_pause):
+        if (random_pause != 0 and
+           (random_pause == 100 or random.randint(1, 100) <= random_pause)):
             time.sleep(pause_time)
 
     except Exception:
