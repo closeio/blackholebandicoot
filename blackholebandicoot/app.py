@@ -3,6 +3,7 @@
 import os
 import random
 import sqlite3
+import threading
 import time
 import uuid
 
@@ -14,6 +15,7 @@ DB_POOL_SIZE = 5
 MAX_OLD_DBS = 2
 MAX_DB_SIZE = 10000000  # Bytes
 CONFIG_REFRESH_TIME = 5  # Seconds
+SAMPLE_RATE = 0  # Percentage of records to keep
 
 app = Flask(__name__)
 
@@ -54,21 +56,25 @@ class DBPool(object):
         self.free_db = []
         self.old = []
         self.max_old = max_old
+        self.lock = threading.Lock()
         for i in range(0, size):
             self.free_db.append(DB(self.base_name, self.counter))
             self.counter += 1
 
-
     def get_db(self):
         """Checkout db connection from pool."""
 
-        while True:
-            if self.free_db:
-                db = self.free_db.pop()
-                db.create_db()
-                return db
-            print ('Waiting for db')
-            time.sleep(.02)
+        self.lock.acquire()
+        try:
+            while True:
+                if self.free_db:
+                    db = self.free_db.pop()
+                    db.create_db()
+                    return db
+                print ('Waiting for db')
+                time.sleep(.02)
+        finally:
+            self.lock.release()
 
     def release_db(self, db):
         """
@@ -78,25 +84,30 @@ class DBPool(object):
         Deletes old data files if max old files is set.
         """
 
-        if db.too_big():
-            self.free_db.append(DB(self.base_name, self.counter))
-            self.counter += 1
-            if self.max_old:
-                self.old.insert(0, db.name)
-                if len(self.old) >= self.max_old:
-                    old = self.old.pop()
-                    try:
-                        os.remove(old)
-                    except Exception:
-                        pass
-        else:
-            self.free_db.append(db)
+        self.lock.acquire()
+        try:
+            if db.too_big():
+                self.free_db.append(DB(self.base_name, self.counter))
+                self.counter += 1
+                if self.max_old:
+                    self.old.insert(0, db.name)
+                    if len(self.old) >= self.max_old:
+                        old = self.old.pop()
+                        try:
+                            os.remove(old)
+                        except Exception:
+                            pass
+            else:
+                self.free_db.append(db)
+        finally:
+            self.lock.release()
 
 
 db_pool = DBPool(DB_POOL_SIZE, MAX_OLD_DBS)
 last_config = 0
 pause_time = 0
 random_pause = 0
+sample_rate = SAMPLE_RATE
 
 
 def load_config():
@@ -121,10 +132,13 @@ def catch_all(path):
     """Process all requests."""
 
     load_config()
-    db = db_pool.get_db()
-
+    db = None
     try:
-        db.insert_request(request)
+        if (sample_rate != 0 and
+           (sample_rate == 100 or random.randint(1, 100) <= sample_rate)):
+            print ('SS')
+            db = db_pool.get_db()
+            db.insert_request(request)
         if ((random_pause and random.randint(0, random_pause - 1) == 1) or
                 not random_pause):
             time.sleep(pause_time)
@@ -132,5 +146,6 @@ def catch_all(path):
     except Exception:
         raise
     finally:
-        db_pool.release_db(db)
+        if db:
+            db_pool.release_db(db)
     return Response('{ok: 1}', mimetype='application/json')
