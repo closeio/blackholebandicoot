@@ -1,0 +1,6 @@
+config:
+  max_old: 5
+  pause: 1.1  # Decimal seconds
+  pause_rate: 50  # Percentage of requests we should pause for
+  error_rate: 0
+  sample_rate: 0
