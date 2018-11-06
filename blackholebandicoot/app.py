@@ -172,4 +172,4 @@ def catch_all(path):
     finally:
         if db:
             db_pool.release_db(db)
-    return Response('{ok: 1}', mimetype='application/json', status=return_code)
+    return Response('{"ok": 1}', mimetype='application/json', status=return_code)
