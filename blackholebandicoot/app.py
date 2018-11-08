@@ -43,9 +43,8 @@ class DB(object):
     def insert_request(self, r):
         data = r.get_data(cache=False, as_text=True)
 
-        sql = "insert into requests (host, path, payload) values ('{}', '{}', '{}')".format(
-                        r.full_path, r.host, data)
-        self.db.execute(sql)
+        sql = 'insert into requests (host, path, payload) values (?, ?, ?)'
+        self.db.execute(sql, (r.full_path, r.host, data))
         self.db.commit()
 
 
