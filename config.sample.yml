@@ -1,6 +1,6 @@
 config:
-  max_old: 5
-  pause: 1.1  # Decimal seconds
-  pause_rate: 50  # Percentage of requests we should pause for
-  error_rate: 0
-  sample_rate: 0
+  max_old: 5  # Number of old sqlite databases to keep
+  pause: 1.1  # Decimal seconds to pause
+  pause_rate: 0  # Percentage of requests that should pause before returning
+  error_rate: 0  # Percentage of requests that should return 400 response
+  sample_rate: 0  # Percentage of requests that should be saved to sqlite db
