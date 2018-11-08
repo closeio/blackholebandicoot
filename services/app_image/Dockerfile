@@ -10,6 +10,7 @@ RUN DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get dist-upgrade -y 
   python-virtualenv \
   python3-pip \
   sqlite3 \
+  vim \
   wget \
   && rm -rf /var/lib/apt/lists/*
 
@@ -27,7 +28,7 @@ COPY --chown=blackhole:blackhole requirements.txt /opt/blackholebandicoot
 RUN virtualenv -p python3 /opt/blackholebandicoot/venv && \
     /opt/blackholebandicoot/venv/bin/pip install --no-deps -r /opt/blackholebandicoot/requirements.txt
 
-COPY --chown=blackhole:blackhole config.yml /opt/blackholebandicoot
+COPY --chown=blackhole:blackhole config.sample.yml /opt/blackholebandicoot
 COPY --chown=blackhole:blackhole blackholebandicoot /opt/blackholebandicoot/blackholebandicoot
 
 ENV LANG="en_US.UTF-8" \
