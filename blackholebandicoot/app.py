@@ -1,5 +1,6 @@
 """BlackholeBandicoot."""
 
+import json
 import os
 import random
 import sqlite3
@@ -29,7 +30,7 @@ class DB(object):
     def create_db(self):
         if not self.db:
             self.db = sqlite3.connect(self.name)
-            self.db.execute('create table requests (host text, path text, payload text)')
+            self.db.execute('create table requests (host text, path text, payload text, headers text)')
 
     def too_big(self):
         c = self.db.cursor()
@@ -42,9 +43,9 @@ class DB(object):
 
     def insert_request(self, r):
         data = r.get_data(cache=False, as_text=True)
-
-        sql = 'insert into requests (host, path, payload) values (?, ?, ?)'
-        self.db.execute(sql, (r.full_path, r.host, data))
+        headers = json.dumps([(k, v) for k, v in r.headers])
+        sql = 'insert into requests (host, path, payload, headers) values (?, ?, ?, ?)'
+        self.db.execute(sql, (r.full_path, r.host, data, headers))
         self.db.commit()
 
 
