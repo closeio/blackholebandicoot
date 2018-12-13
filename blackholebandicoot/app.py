@@ -1,5 +1,6 @@
 """BlackholeBandicoot."""
 
+import json
 import os
 import random
 import sqlite3
@@ -21,6 +22,7 @@ CONFIG_REFRESH_TIME = 5  # Seconds
 app = Flask(__name__)
 env = envparse.Env()
 
+
 class DB(object):
     def __init__(self, base, num):
         self.name = 'db/{}-{}.db'.format(base, num)
@@ -29,22 +31,26 @@ class DB(object):
     def create_db(self):
         if not self.db:
             self.db = sqlite3.connect(self.name)
-            self.db.execute('create table requests (host text, path text, payload text)')
+            self.db.execute(
+                'create table requests (host text, path text, payload text, headers text)'
+            )
 
     def too_big(self):
         c = self.db.cursor()
-        c.execute('SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size();')
+        c.execute(
+            'SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size();'
+        )
         size = int(c.fetchone()[0])
         if size > MAX_DB_SIZE:
-            print ('Reached max size, closing db {} ({})'.format(self.name, size))
+            print('Reached max size, closing db {} ({})'.format(self.name, size))
             self.db.close()
             return True
 
     def insert_request(self, r):
         data = r.get_data(cache=False, as_text=True)
-
-        sql = 'insert into requests (host, path, payload) values (?, ?, ?)'
-        self.db.execute(sql, (r.full_path, r.host, data))
+        headers = json.dumps([(k, v) for k, v in r.headers])
+        sql = 'insert into requests (host, path, payload, headers) values (?, ?, ?, ?)'
+        self.db.execute(sql, (r.full_path, r.host, data, headers))
         self.db.commit()
 
 
@@ -71,8 +77,8 @@ class DBPool(object):
                     db = self.free_db.pop()
                     db.create_db()
                     return db
-                print ('Waiting for db')
-                time.sleep(.02)
+                print('Waiting for db')
+                time.sleep(0.02)
         finally:
             self.lock.release()
 
@@ -112,10 +118,13 @@ sample_rate = env('SAMPLE_RATE', cast=int, default=0)
 
 error_rate = env('ERROR_RATE', cast=int, default=0)
 
+
 def print_config():
-    print ('Pause time:{} Random pause:{} Sample rate:{}'.format(
-        pause_time, pause_rate, sample_rate
-        ))
+    print(
+        'Pause time:{} Random pause:{} Sample rate:{}'.format(
+            pause_time, pause_rate, sample_rate
+        )
+    )
 
 
 def load_config():
@@ -123,7 +132,10 @@ def load_config():
 
     global error_rate, local_config, last_config, pause_time, pause_rate, sample_rate
 
-    if not os.path.isfile('config.yml') or time.time() - last_config < CONFIG_REFRESH_TIME:
+    if (
+        not os.path.isfile('config.yml')
+        or time.time() - last_config < CONFIG_REFRESH_TIME
+    ):
         return
 
     last_config = time.time()
@@ -138,12 +150,12 @@ def load_config():
             error_rate = int(config['error_rate'])
             print_config()
     except Exception as e:
-        print ('Error loading config', e)
+        print('Error loading config', e)
 
 
 def should_i(rate):
-    return (rate != 0 and
-           (rate == 100 or random.randint(1, 100) <= rate))
+    return rate != 0 and (rate == 100 or random.randint(1, 100) <= rate)
+
 
 print_config()
 
