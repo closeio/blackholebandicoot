@@ -4,6 +4,48 @@ phases:
         args:
           - build
           - -t
-          - blackholebandicoot:{{ VERSION }}
+          - closeio/blackholebandicoot:{{ VERSION }}
           - -f Dockerfile
           - ../..
+
+  test:
+    - docker:
+        ignore_error: true
+        args:
+          - stop
+          - blackhole
+    - docker:
+        ignore_error: true
+        args:
+          - rm
+          - blackhole
+    - docker:
+        args:
+          - run -p 4000:4000
+          - -d
+          - --name
+          - blackhole
+          - closeio/blackholebandicoot:{{ VERSION }}
+    - run:
+        command: sleep
+        args:
+          - 2
+    - run:
+        command: curl
+        args:
+          - http://localhost:4000/
+
+  push:
+    - docker:
+        args:
+          - tag
+          - closeio/blackholebandicoot:{{ VERSION }}
+          - closeio/blackholebandicoot:latest
+    - docker:
+        args:
+          - push
+          - closeio/blackholebandicoot:{{ VERSION }}
+    - docker:
+        args:
+          - push
+          - closeio/blackholebandicoot:latest
