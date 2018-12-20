@@ -13,7 +13,7 @@ jobs:
 
       - run:
           name: Pip DevOps
-          command: pip install -r /home/circleci/devops/scripts/k8s-cicd/requirements.txt
+          command: sudo pip install -r /home/circleci/devops/scripts/k8s-cicd/requirements.txt
 
       - run:
           name: Build
