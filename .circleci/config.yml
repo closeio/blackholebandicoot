@@ -3,31 +3,31 @@ jobs:
   doit:
     docker:
       - image: python:3.5-jessie
-    working_directory: /opt
+    working_directory: /opt/blackholebandicoot
     steps:
       - checkout
       - setup_docker_engine
       - run:
           name: Clone DevOps
-          command: git clone git@github.com:closeio/devops.git
+          command: git clone git@github.com:closeio/devops.git /opt/devops
 
       - run:
           name: Pip DevOps
-          command: pip install -r devops/scripts/k8s-cicd/requirements.txt
+          command: pip install -r /opt/devops/scripts/k8s-cicd/requirements.txt
 
       - run:
           name: Build
-          command: devops/scripts/k8s-cicd/k8scicd.sh -p build -d blackholebandicoot/services -s
+          command: /opt/devops/scripts/k8s-cicd/k8scicd.sh -p build -d /opt/blackholebandicoot/services -s
 
       - run:
           name: Test
-          command: devops/scripts/k8s-cicd/k8scicd.sh -p test -d blackholebandicoot/services -s
+          command: /opt/devops/scripts/k8s-cicd/k8scicd.sh -p test -d /opt/blackholebandicoot/services -s
 
       - run:
           name: Push
           command: |
             if [ "$CIRCLE_BRANCH" = "master" ]; then
-              devops/scripts/k8s-cicd/k8scicd.sh -p push -d blackholebandicoot/services -s
+              /opt/devops/scripts/k8s-cicd/k8scicd.sh -p push -d /opt/blackholebandicoot/services -s
             fi
 
 workflows:
