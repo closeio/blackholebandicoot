@@ -17,17 +17,17 @@ jobs:
 
       - run:
           name: Build
-          command: /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p build -d /home/circleci/blackholebandicoot/services -s
+          command: /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p build -d /home/circleci/blackholebandicoot/services -s -v VERSION=${CIRCLE_SHA1}
 
       - run:
           name: Test
-          command: /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p test -d /home/circleci/blackholebandicoot/services -s
+          command: /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p test -d /home/circleci/blackholebandicoot/services -s -v VERSION=${CIRCLE_SHA1}
 
       #- run:
       #    name: Push
       #    command: |
       #      if [ "$CIRCLE_BRANCH" = "master" ]; then
-      #        /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p push -d /home/circleci/blackholebandicoot/services -s
+      #        /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p push -d /home/circleci/blackholebandicoot/services -s -v VERSION=${CIRCLE_SHA1}
       #      fi
 
 workflows:
