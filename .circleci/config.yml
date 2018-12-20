@@ -2,29 +2,33 @@ version: 2
 jobs:
   doit:
     docker:
-      - image: python:3.5-jessie
-    working_directory: /tmp
+      - image: circleci/python:3.5.4-jessie
+    working_directory: /home/circleci/blackholebandicoot
     steps:
       - checkout
       - setup_docker_engine
       - run:
           name: Clone DevOps
-          command: git@github.com:closeio/devops.git
+          command: git clone git@github.com:closeio/devops.git /home/circleci/devops
+
+      - run:
+          name: Pip DevOps
+          command: sudo pip install -r /home/circleci/devops/scripts/k8s-cicd/requirements.txt
 
       - run:
           name: Build
-          command: scripts/k8s-cicd/k8scicd.sh -p build -d blackholebandicoot/services -s
+          command: /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p build -d /home/circleci/blackholebandicoot/services -s -v VERSION=${CIRCLE_SHA1}
 
       - run:
           name: Test
-          command: scripts/k8s-cicd/k8scicd.sh -p test -d blackholebandicoot/services -s
+          command: /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p test -d /home/circleci/blackholebandicoot/services -s -v VERSION=${CIRCLE_SHA1}
 
-      - run:
-          name: Push
-          command: |
-            if [ "$CIRCLE_BRANCH" = "master" ]; then
-              scripts/k8s-cicd/k8scicd.sh -p push -d blackholebandicoot/services -s
-            fi
+      #- run:
+      #    name: Push
+      #    command: |
+      #      if [ "$CIRCLE_BRANCH" = "master" ]; then
+      #        /home/circleci/devops/scripts/k8s-cicd/k8scicd.sh -p push -d /home/circleci/blackholebandicoot/services -s -v VERSION=${CIRCLE_SHA1}
+      #      fi
 
 workflows:
   version: 2

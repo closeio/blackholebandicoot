@@ -1,7 +1,7 @@
 # BlackholeBandicoot
 
-Flask app that accepts any request and at a minimum logs the request
-to stdout.
+Testing web server that accepts any request and at a minimum logs the request
+to stdout. To be used by developers or testers, not a production web/app server.
 
 ## Configuration options
 The following settings can be adjusted via environment variables or a
