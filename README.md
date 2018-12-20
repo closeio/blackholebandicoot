@@ -3,6 +3,13 @@
 Testing web server that accepts any request and at a minimum logs the request
 to stdout. To be used by developers or testers, not a production web/app server.
 
+To get started run the following command and then make
+requests to http://127.0.0.1:4000/.
+```
+docker run -p 4000:4000 closeio/blackholebandicoot
+```
+
+
 ## Configuration options
 The following settings can be adjusted via environment variables or a
 `config.yml` file (see `config.sample.yml`). The settings in the `config.yml`
