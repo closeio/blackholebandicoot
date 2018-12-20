@@ -15,3 +15,7 @@ running processes without restarting them.
 * SAMPLE_RATE: Percentage of requests that should be written to sqlite3 database
 * ERROR_RATE: Percentage of requests that should return 400 reponses instead of 200
 * max_old (config file only): Number of rotated sqlite3 database files that should be kept
+
+
+## Sqlite3 db
+Look in the `db` directory for the database files. Run `select * from requests;` to see request data.
