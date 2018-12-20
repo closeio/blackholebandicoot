@@ -3,13 +3,13 @@ jobs:
   doit:
     docker:
       - image: python:3.5-jessie
-    working_directory: /tmp
+    working_directory: /opt
     steps:
       - checkout
       - setup_docker_engine
       - run:
           name: Clone DevOps
-          command: git@github.com:closeio/devops.git
+          command: git clone git@github.com:closeio/devops.git
 
       - run:
           name: Build
