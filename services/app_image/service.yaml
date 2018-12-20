@@ -29,7 +29,7 @@ phases:
     - run:
         command: sleep
         args:
-          - 2
+          - 5
     - run:
         command: curl
         args:
