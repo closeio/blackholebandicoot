@@ -24,11 +24,15 @@ env = envparse.Env()
 
 
 class DB(object):
+    """Database manager."""
+
     def __init__(self, base, num):
         self.name = 'db/{}-{}.db'.format(base, num)
         self.db = None
 
     def create_db(self):
+        """Create sqlite3 database and requests table."""
+
         if not self.db:
             self.db = sqlite3.connect(self.name)
             self.db.execute(
@@ -36,6 +40,8 @@ class DB(object):
             )
 
     def too_big(self):
+        """Check if database size has gone over size limit."""
+
         c = self.db.cursor()
         c.execute(
             'SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size();'
@@ -47,6 +53,8 @@ class DB(object):
             return True
 
     def insert_request(self, r):
+        """Insert request data into requests table."""
+
         data = r.get_data(cache=False, as_text=True)
         headers = json.dumps([(k, v) for k, v in r.headers])
         sql = 'insert into requests (host, path, payload, headers) values (?, ?, ?, ?)'
@@ -55,6 +63,8 @@ class DB(object):
 
 
 class DBPool(object):
+    """Database pool."""
+
     def __init__(self, size=5, max_old=None):
         self.base_name = str(uuid.uuid4())
         self.counter = 1
@@ -120,6 +130,8 @@ error_rate = env('ERROR_RATE', cast=int, default=0)
 
 
 def print_config():
+    """Print configuration."""
+
     print(
         'Pause time:{} Random pause:{} Sample rate:{}'.format(
             pause_time, pause_rate, sample_rate
@@ -154,6 +166,8 @@ def load_config():
 
 
 def should_i(rate):
+    """Determine if a request falls within action percentage."""
+
     return rate != 0 and (rate == 100 or random.randint(1, 100) <= rate)
 
 
